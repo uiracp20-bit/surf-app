@@ -1,0 +1,14 @@
+{
+  "name": "Uira Surf Dashboard",
+  "short_name": "Surf",
+  "description": "Live Northern Beaches surf — Dee Why, Long Reef & Curl Curl",
+  "start_url": "/surf-app/mobile.html",
+  "scope": "/surf-app/",
+  "display": "standalone",
+  "background_color": "#0a2744",
+  "theme_color": "#0a2744",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

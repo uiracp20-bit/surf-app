@@ -1,0 +1,690 @@
+<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Uira Surf Dashboard",
+  "schemaVersion": 1,
+  "description": "Live surf dashboard for Dee Why, Long Reef & Curl Curl — conditions, gear picks, tides, session windows, technique tips",
+  "mcpTools": [
+    "mcp__Claude_in_Chrome__navigate",
+    "mcp__Claude_in_Chrome__get_page_text",
+    "mcp__Claude_in_Chrome__tabs_context_mcp"
+  ],
+  "mcpServerNames": [
+    "Claude_in_Chrome",
+    "Claude_in_Chrome",
+    "Claude_in_Chrome"
+  ]
+}
+</script>
+<html lang="en" style="color-scheme: light;">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a2744">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Surf">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Uira's Surf Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: #1a202c; font-size: 13px; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #0a2744 0%, #1a4a7a 100%); color: white; padding: 12px 14px 10px; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .header-title { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; }
+  .header-subtitle { font-size: 10px; color: #90cdf4; margin-top: 1px; }
+  .clock { font-size: 17px; font-weight: 700; color: #63b3ed; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+  .date-line { font-size: 10px; color: #90cdf4; text-align: right; margin-top: 1px; }
+
+  /* ALERT BAR */
+  .alert-bar { padding: 6px 14px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .alert-bar.onshore { background: #fed7aa; color: #92400e; border-bottom: 2px solid #f6ad55; }
+  .alert-bar.offshore { background: #c6f6d5; color: #22543d; border-bottom: 2px solid #68d391; }
+  .alert-bar .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .alert-bar.onshore .dot { background: #dd6b20; }
+  .alert-bar.offshore .dot { background: #38a169; }
+
+  /* TABS */
+  .tabs { display: flex; background: #1a4a7a; }
+  .tab-btn { flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 600; color: #90cdf4; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .tab-btn.active { color: white; border-bottom-color: #63b3ed; background: rgba(255,255,255,0.08); }
+
+  /* TAB CONTENT */
+  .tab-content { display: none; padding: 10px 12px 16px; }
+  .tab-content.active { display: block; }
+
+  /* RATING BANNER */
+  .rating-banner { background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .rating-left { }
+  .rating-label { font-size: 10px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+  .stars { font-size: 14px; margin: 2px 0; }
+  .condition-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+  .badge-poor-fair { background: #fef3c7; color: #92400e; border: 1px solid #f6d860; }
+  .badge-good { background: #c6f6d5; color: #22543d; border: 1px solid #68d391; }
+  .badge-epic { background: #bee3f8; color: #1a365d; border: 1px solid #63b3ed; }
+  .surf-size { font-size: 22px; font-weight: 800; color: #2b6cb0; line-height: 1; }
+  .surf-desc { font-size: 10px; color: #718096; margin-top: 2px; }
+
+  /* SECTION CARD */
+  .card { background: white; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card-title { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #4a5568; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+
+  /* CONDITIONS GRID */
+  .cond-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .cond-item { background: #f7fafc; border-radius: 6px; padding: 6px 8px; }
+  .cond-item.full { grid-column: 1 / -1; }
+  .cond-key { font-size: 9px; color: #718096; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+  .cond-val { font-size: 13px; font-weight: 700; color: #1a202c; margin-top: 1px; }
+  .cond-sub { font-size: 10px; color: #718096; }
+  .cond-item.wind-onshore { background: #fff5f5; border-left: 3px solid #fc8181; }
+  .cond-item.wind-cross { background: #fffff0; border-left: 3px solid #ecc94b; }
+  .cond-item.wind-offshore { background: #f0fff4; border-left: 3px solid #68d391; }
+
+  /* SESSION WINDOW */
+  .session-row { display: flex; gap: 6px; margin-bottom: 4px; }
+  .session-badge { flex-shrink: 0; width: 60px; }
+  .badge-best { background: #bee3f8; color: #2c5282; border-radius: 4px; padding: 2px 5px; font-size: 9px; font-weight: 700; text-align: center; }
+  .badge-slot { background: #e9d8fd; color: #44337a; border-radius: 4px; padding: 2px 5px; font-size: 9px; font-weight: 700; text-align: center; }
+  .session-text { font-size: 11px; color: #2d3748; line-height: 1.4; }
+  .session-warn { font-size: 10px; color: #c05621; margin-top: 4px; padding: 4px 7px; background: #fffaf0; border-left: 2px solid #ed8936; border-radius: 3px; }
+  .session-good { font-size: 10px; color: #276749; margin-top: 4px; padding: 4px 7px; background: #f0fff4; border-left: 2px solid #48bb78; border-radius: 3px; }
+
+  /* FORECAST CARDS */
+  .forecast-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .fc-card { background: #f7fafc; border-radius: 6px; padding: 6px 4px; text-align: center; border: 1.5px solid transparent; }
+  .fc-card.today { border-color: #63b3ed; background: #ebf8ff; }
+  .fc-day { font-size: 9px; font-weight: 700; color: #4a5568; }
+  .fc-size { font-size: 12px; font-weight: 800; color: #2b6cb0; margin: 3px 0; }
+  .fc-date { font-size: 8px; color: #a0aec0; }
+
+  /* GEAR CARDS */
+  .gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .gear-card { background: #f7fafc; border-radius: 7px; padding: 8px 9px; border: 1px solid #e2e8f0; }
+  .gear-board { font-size: 11px; font-weight: 700; color: #1a202c; }
+  .gear-vol { font-size: 10px; color: #718096; }
+  .fins-bar { background: #2b6cb0; color: white; border-radius: 4px; padding: 2px 6px; font-size: 9px; font-weight: 700; margin: 4px 0; display: inline-block; }
+  .gear-why { font-size: 10px; color: #4a5568; font-style: italic; line-height: 1.3; margin-top: 3px; }
+
+  /* WETSUIT */
+  .wetsuit-bar { background: linear-gradient(90deg, #f6ad55, #ed8936); color: white; border-radius: 6px; padding: 7px 10px; display: flex; align-items: center; gap: 8px; }
+  .wetsuit-icon { font-size: 16px; }
+  .wetsuit-name { font-size: 12px; font-weight: 700; }
+  .wetsuit-reason { font-size: 10px; opacity: 0.9; margin-top: 1px; }
+
+  /* TIDES */
+  .tide-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .tide-item { border-radius: 6px; padding: 6px 4px; text-align: center; }
+  .tide-item.high { background: #ebf8ff; border: 1px solid #90cdf4; }
+  .tide-item.low { background: #fffaf0; border: 1px solid #fbd38d; }
+  .tide-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .tide-item.high .tide-label { color: #2b6cb0; }
+  .tide-item.low .tide-label { color: #c05621; }
+  .tide-height { font-size: 13px; font-weight: 800; margin: 2px 0; }
+  .tide-item.high .tide-height { color: #2b6cb0; }
+  .tide-item.low .tide-height { color: #dd6b20; }
+  .tide-time { font-size: 9px; color: #718096; }
+
+  /* TECHNIQUE TIP */
+  .tip-box { background: #f0fff4; border-left: 3px solid #48bb78; border-radius: 0 6px 6px 0; padding: 8px 10px; }
+  .tip-label { font-size: 9px; font-weight: 700; color: #276749; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .tip-text { font-size: 11px; color: #22543d; line-height: 1.5; }
+
+  /* SURFLINE LINK */
+  .sl-btn { display: block; text-align: center; background: #0a2744; color: white; border-radius: 6px; padding: 8px; font-size: 11px; font-weight: 600; text-decoration: none; margin-top: 8px; letter-spacing: 0.3px; }
+
+  /* FOOTER */
+  .footer { background: #2d3748; color: #a0aec0; text-align: center; padding: 8px; font-size: 9px; line-height: 1.5; }
+  .footer strong { color: #e2e8f0; }
+
+  /* ENERGY ROW */
+  .energy-row { display: flex; gap: 6px; }
+  .energy-row .cond-item { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">🏄 Northern Beaches Surf</div>
+      <div class="header-subtitle">Dee Why · Long Reef · Curl Curl</div>
+    </div>
+    <div style="text-align:right">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="date-line" id="dateline">AEST</div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT BAR -->
+<div class="alert-bar offshore">
+  <div class="dot"></div>
+  ✅ NW 3kts OFFSHORE at all 3 spots — clean glassy surf. Stays light offshore through midday.
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('deewhy',this)">Dee Why</button>
+  <button class="tab-btn" onclick="showTab('longreef',this)">Long Reef</button>
+  <button class="tab-btn" onclick="showTab('curlcurl',this)">Curl Curl</button>
+</div>
+
+<!-- ===== DEE WHY ===== -->
+<div id="deewhy" class="tab-content active">
+
+  <!-- Rating Banner -->
+  <div class="rating-banner">
+    <div class="rating-left">
+      <div class="rating-label">Condition Rating</div>
+      <div class="stars">⭐⭐⭐☆☆</div>
+      <span class="condition-badge badge-poor-fair">Fair</span>
+    </div>
+    <div style="text-align:right">
+      <div class="surf-size">1–2ft+</div>
+      <div class="surf-desc">Thigh to stomach</div>
+    </div>
+  </div>
+
+  <!-- Conditions Grid -->
+  <div class="card">
+    <div class="card-title">Current Conditions</div>
+    <div class="cond-grid">
+      <div class="cond-item">
+        <div class="cond-key">Primary Swell</div>
+        <div class="cond-val">4ft · 9s</div>
+        <div class="cond-sub">ENE 67° · windswell</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Secondary Swell</div>
+        <div class="cond-val">2ft · 15s</div>
+        <div class="cond-sub">S 186° · clean groundswell</div>
+      </div>
+      <div class="cond-item wind-offshore">
+        <div class="cond-key">Wind</div>
+        <div class="cond-val">3kts NW</div>
+        <div class="cond-sub">✅ Offshore · 4kt gusts</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Water / Air Temp</div>
+        <div class="cond-val">19°C / 13°C</div>
+        <div class="cond-sub">Winter water</div>
+      </div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="energy-row">
+      <div class="cond-item">
+        <div class="cond-key">Wave Energy</div>
+        <div class="cond-val">128 kJ</div>
+        <div class="cond-sub">Low-moderate</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Consistency</div>
+        <div class="cond-val">58 / 100</div>
+        <div class="cond-sub">Inconsistent</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Windows -->
+  <div class="card">
+    <div class="card-title">Session Windows</div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-best">BEST</div></div>
+      <div class="session-text"><strong>7:00–9:00am</strong> — Light NW offshore grooming it glassy on the incoming tide up to the 9:07am high. Cleanest window of the day.</div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-slot">10–12pm</div></div>
+      <div class="session-text"><strong>Good — your slot works today.</strong> Wind stays light offshore (~6kts NW). Tide dropping off the 9:07am high → mid tide by 10–11am, nice shape on the Point.</div>
+    </div>
+    <div class="session-good">✅ Offshore all morning. Small day (thigh-to-stomach) so it's a groveller, but it's clean — bring a high-volume board and milk every section.</div>
+  </div>
+
+  <!-- 3-Day Forecast -->
+  <div class="card">
+    <div class="card-title">3-Day Forecast</div>
+    <div class="forecast-row">
+      <div class="fc-card today">
+        <div class="fc-day">TUE</div>
+        <div class="fc-size">1–2ft+</div>
+        <div class="fc-date">16/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">WED</div>
+        <div class="fc-size">1–2ft+</div>
+        <div class="fc-date">17/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">THU</div>
+        <div class="fc-size">1–2ft+</div>
+        <div class="fc-date">18/6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board + Fins -->
+  <div class="card">
+    <div class="card-title">Board + Fins Recommendation</div>
+    <div class="gear-grid">
+      <div class="gear-card">
+        <div class="gear-board">JS Sub Zero</div>
+        <div class="gear-vol">5'6 · 30.3L</div>
+        <div><span class="fins-bar">MF Twin+1 M/L</span></div>
+        <div class="gear-why">The call for 1–2ft+. Extra foam + twin glide keeps you moving through the weak ENE windswell sections. Clean offshore = it'll feel fun.</div>
+      </div>
+      <div class="gear-card">
+        <div class="gear-board">Inferno 72</div>
+        <div class="gear-vol">5'9 · 28.6L</div>
+        <div><span class="fins-bar">Sharpeye Tri L</span></div>
+        <div class="gear-why">If the 15s S groundswell shows on the sets, the thruster gives you drive and control off the bottom on a cleaner wall.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wetsuit -->
+  <div class="card">
+    <div class="card-title">Wetsuit</div>
+    <div class="wetsuit-bar">
+      <div class="wetsuit-icon">🤿</div>
+      <div>
+        <div class="wetsuit-name">Rip Curl Heatseeker 3/2mm</div>
+        <div class="wetsuit-reason">Water 19°C sits in the 17–20°C band. Surfline says 2mm, but with 13°C air at dawn the 3/2 keeps you comfy for a 2hr session.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tides -->
+  <div class="card">
+    <div class="card-title">Tides — Blue Fish Point</div>
+    <div class="tide-grid">
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.1m</div>
+        <div class="tide-time">3:12am</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.2m</div>
+        <div class="tide-time">9:07am</div>
+      </div>
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.4m</div>
+        <div class="tide-time">2:32pm</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.9m</div>
+        <div class="tide-time">9:06pm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technique Tip -->
+  <div class="tip-box">
+    <div class="tip-label">🎯 Technique Tip — Frontside</div>
+    <div class="tip-text">Small + clean = a speed-generation day on the Point right. On your frontside, stay low and pump from the pocket rather than waiting for the lip — the ENE windswell won't throw much. Keep weight forward through the flat ENE sections, then unload one committed frontside turn when the cleaner S-set wall stands up.</div>
+  </div>
+
+  <a class="sl-btn" href="https://www.surfline.com/surf-report/dee-why/5842041f4e65fad6a7708bfa" target="_blank">🌊 View on Surfline</a>
+</div>
+
+<!-- ===== LONG REEF ===== -->
+<div id="longreef" class="tab-content">
+
+  <!-- Rating Banner -->
+  <div class="rating-banner">
+    <div class="rating-left">
+      <div class="rating-label">Condition Rating</div>
+      <div class="stars">⭐⭐⭐⭐☆</div>
+      <span class="condition-badge badge-good">Fair to Good</span>
+    </div>
+    <div style="text-align:right">
+      <div class="surf-size">2–3ft</div>
+      <div class="surf-desc">Chest to overhead</div>
+    </div>
+  </div>
+
+  <!-- Conditions Grid -->
+  <div class="card">
+    <div class="card-title">Current Conditions</div>
+    <div class="cond-grid">
+      <div class="cond-item">
+        <div class="cond-key">Primary Swell</div>
+        <div class="cond-val">4ft · 9s</div>
+        <div class="cond-sub">ENE 67° · windswell</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Secondary Swell</div>
+        <div class="cond-val">2ft · 15s</div>
+        <div class="cond-sub">S 186° · feeds the reef</div>
+      </div>
+      <div class="cond-item wind-offshore">
+        <div class="cond-key">Wind</div>
+        <div class="cond-val">3kts NW</div>
+        <div class="cond-sub">✅ Offshore · 4kt gusts</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Water / Air Temp</div>
+        <div class="cond-val">19°C / 13°C</div>
+        <div class="cond-sub">Winter water</div>
+      </div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="energy-row">
+      <div class="cond-item">
+        <div class="cond-key">Wave Energy</div>
+        <div class="cond-val">200 kJ</div>
+        <div class="cond-sub">Punchiest of 3 spots</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Consistency</div>
+        <div class="cond-val">57 / 100</div>
+        <div class="cond-sub">Inconsistent</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Windows -->
+  <div class="card">
+    <div class="card-title">Session Windows</div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-best">BEST</div></div>
+      <div class="session-text"><strong>7:00–9:00am</strong> — Highest energy spot (200kJ) + offshore NW = the standout of the three this morning. Incoming tide to 9:07am high fills the outer reef sections.</div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-slot">10–12pm</div></div>
+      <div class="session-text"><strong>Very workable.</strong> Light offshore holds. Dropping tide after the high exposes more of the reef shelf — pick the section with water over it.</div>
+    </div>
+    <div class="session-good">✅ Top pick today for size + clean conditions. Chest-to-overhead on the sets with offshore grooming. Watch the dropping tide over the shallow shelf later.</div>
+  </div>
+
+  <!-- 3-Day Forecast -->
+  <div class="card">
+    <div class="card-title">3-Day Forecast</div>
+    <div class="forecast-row">
+      <div class="fc-card today">
+        <div class="fc-day">TUE</div>
+        <div class="fc-size">2–3ft</div>
+        <div class="fc-date">16/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">WED</div>
+        <div class="fc-size">2–3ft</div>
+        <div class="fc-date">17/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">THU</div>
+        <div class="fc-size">2–3ft</div>
+        <div class="fc-date">18/6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board + Fins -->
+  <div class="card">
+    <div class="card-title">Board + Fins Recommendation</div>
+    <div class="gear-grid">
+      <div class="gear-card">
+        <div class="gear-board">Inferno 72</div>
+        <div class="gear-vol">5'9 · 28.6L</div>
+        <div><span class="fins-bar">FT Tri L</span></div>
+        <div class="gear-why">Clean offshore 2–3ft with bite = perfect performance-thruster window. Drive and control off the bottom on the reef walls.</div>
+      </div>
+      <div class="gear-card">
+        <div class="gear-board">Inferno FT</div>
+        <div class="gear-vol">5'11 · 28.8L</div>
+        <div><span class="fins-bar">H4 Quad L</span></div>
+        <div class="gear-why">If the overhead sets keep pulsing, the quad gives extra paddle + speed to connect across the flatter spots between reef sections.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wetsuit -->
+  <div class="card">
+    <div class="card-title">Wetsuit</div>
+    <div class="wetsuit-bar">
+      <div class="wetsuit-icon">🤿</div>
+      <div>
+        <div class="wetsuit-name">Rip Curl Heatseeker 3/2mm</div>
+        <div class="wetsuit-reason">Water 19°C in the 17–20°C band. 3/2 is the call — warm enough for a longer dawn session with 13°C air.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tides -->
+  <div class="card">
+    <div class="card-title">Tides — Long Reef</div>
+    <div class="tide-grid">
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.1m</div>
+        <div class="tide-time">3:11am</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.2m</div>
+        <div class="tide-time">9:07am</div>
+      </div>
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.4m</div>
+        <div class="tide-time">2:31pm</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.9m</div>
+        <div class="tide-time">9:06pm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technique Tip -->
+  <div class="tip-box">
+    <div class="tip-label">🎯 Technique Tip — Frontside on Reef</div>
+    <div class="tip-text">Offshore + reef = the lip stands up clean. On your frontside rights, set your line early off the take-off and trust the wall — don't stall. Drive hard off the bottom and project up into the offshore-held lip for a proper frontside hit. Mind the dropping tide over the shelf: keep your turns over the deeper water.</div>
+  </div>
+
+  <a class="sl-btn" href="https://www.surfline.com/surf-report/long-reef/584204204e65fad6a77093de" target="_blank">🌊 View on Surfline</a>
+</div>
+
+<!-- ===== CURL CURL ===== -->
+<div id="curlcurl" class="tab-content">
+
+  <!-- Rating Banner -->
+  <div class="rating-banner">
+    <div class="rating-left">
+      <div class="rating-label">Condition Rating</div>
+      <div class="stars">⭐⭐⭐⭐☆</div>
+      <span class="condition-badge badge-good">Fair to Good</span>
+    </div>
+    <div style="text-align:right">
+      <div class="surf-size">2–3ft</div>
+      <div class="surf-desc">Chest to overhead</div>
+    </div>
+  </div>
+
+  <!-- Conditions Grid -->
+  <div class="card">
+    <div class="card-title">Current Conditions</div>
+    <div class="cond-grid">
+      <div class="cond-item">
+        <div class="cond-key">Primary Swell</div>
+        <div class="cond-val">4ft · 9s</div>
+        <div class="cond-sub">ENE 67° · windswell</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Secondary Swell</div>
+        <div class="cond-val">2ft · 15s</div>
+        <div class="cond-sub">S 186° · S-magnet feed</div>
+      </div>
+      <div class="cond-item wind-offshore">
+        <div class="cond-key">Wind</div>
+        <div class="cond-val">3kts NW</div>
+        <div class="cond-sub">✅ Offshore · 4kt gusts</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Water / Air Temp</div>
+        <div class="cond-val">19°C / 13°C</div>
+        <div class="cond-sub">Winter water</div>
+      </div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="energy-row">
+      <div class="cond-item">
+        <div class="cond-key">Wave Energy</div>
+        <div class="cond-val">195 kJ</div>
+        <div class="cond-sub">Strong</div>
+      </div>
+      <div class="cond-item">
+        <div class="cond-key">Consistency</div>
+        <div class="cond-val">62 / 100</div>
+        <div class="cond-sub">Best of 3 spots</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Windows -->
+  <div class="card">
+    <div class="card-title">Session Windows</div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-best">BEST</div></div>
+      <div class="session-text"><strong>7:00–9:00am</strong> — Best consistency of the three (62/100) and offshore NW grooming the beachie peaks clean on the incoming tide.</div>
+    </div>
+    <div style="height:6px"></div>
+    <div class="session-row">
+      <div class="session-badge"><div class="badge-slot">10–12pm</div></div>
+      <div class="session-text"><strong>Solid.</strong> Light offshore holds. Tide drops off the 9:07am high → mid-low tide by 11am hollows out the beach-break peaks. The S swell wraps into the south end nicely.</div>
+    </div>
+    <div class="session-good">✅ Most consistent of the three and a known S-swell magnet — the clean S groundswell is feeding it. Hunt the south-end peak for the best shape.</div>
+  </div>
+
+  <!-- 3-Day Forecast -->
+  <div class="card">
+    <div class="card-title">3-Day Forecast</div>
+    <div class="forecast-row">
+      <div class="fc-card today">
+        <div class="fc-day">TUE</div>
+        <div class="fc-size">2–3ft</div>
+        <div class="fc-date">16/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">WED</div>
+        <div class="fc-size">2–3ft</div>
+        <div class="fc-date">17/6</div>
+      </div>
+      <div class="fc-card">
+        <div class="fc-day">THU</div>
+        <div class="fc-size">1–3ft</div>
+        <div class="fc-date">18/6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Board + Fins -->
+  <div class="card">
+    <div class="card-title">Board + Fins Recommendation</div>
+    <div class="gear-grid">
+      <div class="gear-card">
+        <div class="gear-board">Inferno FT</div>
+        <div class="gear-vol">5'11 · 28.8L</div>
+        <div><span class="fins-bar">H4 Quad L</span></div>
+        <div class="gear-why">Quad speed suits the wedging beach-break peaks — generates drive down the line on the S-swell bowls when sections run fast.</div>
+      </div>
+      <div class="gear-card">
+        <div class="gear-board">Inferno 72</div>
+        <div class="gear-vol">5'9 · 28.6L</div>
+        <div><span class="fins-bar">FT Tri L</span></div>
+        <div class="gear-why">Thruster control for the punchier south-end peak — more pivot if the 2–3ft sets stand up steep and hollow on the dropping tide.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wetsuit -->
+  <div class="card">
+    <div class="card-title">Wetsuit</div>
+    <div class="wetsuit-bar">
+      <div class="wetsuit-icon">🤿</div>
+      <div>
+        <div class="wetsuit-name">Rip Curl Heatseeker 3/2mm</div>
+        <div class="wetsuit-reason">Water 19°C in the 17–20°C band. 3/2 keeps you warm for a 2hr session with cool 13°C dawn air.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tides -->
+  <div class="card">
+    <div class="card-title">Tides — Blue Fish Point</div>
+    <div class="tide-grid">
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.1m</div>
+        <div class="tide-time">3:12am</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.2m</div>
+        <div class="tide-time">9:07am</div>
+      </div>
+      <div class="tide-item low">
+        <div class="tide-label">Low</div>
+        <div class="tide-height">0.4m</div>
+        <div class="tide-time">2:32pm</div>
+      </div>
+      <div class="tide-item high">
+        <div class="tide-label">High</div>
+        <div class="tide-height">1.9m</div>
+        <div class="tide-time">9:06pm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Technique Tip -->
+  <div class="tip-box">
+    <div class="tip-label">🎯 Technique Tip — South-End Right (Frontside)</div>
+    <div class="tip-text">The S groundswell wedges hard into the south-end right — your frontside. With it clean and offshore, take off deep and set your rail immediately; the wedge gives you a steep first turn for free. Commit to one big frontside carve off the bottom while the offshore is holding the face open, rather than nursing it down the line.</div>
+  </div>
+
+  <a class="sl-btn" href="https://www.surfline.com/surf-report/curl-curl/5842041f4e65fad6a7708bfb" target="_blank">🌊 View on Surfline</a>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>Live data scraped from Surfline</strong><br>
+  Tuesday, 16 June 2026 · ~6:11am AEST<br>
+  Dee Why · Long Reef · Curl Curl
+</div>
+
+<script>
+  function showTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function updateClock() {
+    const now = new Date();
+    const timeStr = new Intl.DateTimeFormat('en-AU', {
+      timeZone: 'Australia/Sydney',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).format(now);
+    const dateStr = new Intl.DateTimeFormat('en-AU', {
+      timeZone: 'Australia/Sydney',
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+    }).format(now);
+    document.getElementById('clock').textContent = timeStr;
+    document.getElementById('dateline').textContent = dateStr + ' AEST';
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

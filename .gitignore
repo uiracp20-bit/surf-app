@@ -1,0 +1,7 @@
+.github_token
+.last_sync_hash
+.sync_log.txt
+.DS_Store
+versions/
+thumbnail.png
+.claude/
