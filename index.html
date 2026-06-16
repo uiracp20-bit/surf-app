@@ -46,6 +46,15 @@
   .alert-bar.onshore .dot { background: #dd6b20; }
   .alert-bar.offshore .dot { background: #38a169; }
 
+  /* SHARK ALERT BAR */
+  .shark-bar { padding: 6px 14px; font-size: 11px; font-weight: 600; display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; border-bottom: 2px solid; }
+  .shark-bar.shark-clear { background: #c6f6d5; color: #22543d; border-color: #68d391; }
+  .shark-bar.shark-info  { background: #e2e8f0; color: #2d3748; border-color: #a0aec0; }
+  .shark-bar.shark-watch { background: #fef3c7; color: #92400e; border-color: #f6ad55; }
+  .shark-bar.shark-alert { background: #fed7d7; color: #822727; border-color: #fc8181; }
+  .shark-ico { font-size: 13px; flex-shrink: 0; }
+  .shark-link { color: inherit; text-decoration: underline; font-weight: 700; white-space: nowrap; }
+
   /* TABS */
   .tabs { display: flex; background: #1a4a7a; }
   .tab-btn { flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 600; color: #90cdf4; border: none; background: transparent; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
@@ -163,6 +172,15 @@
 <div class="alert-bar offshore">
   <div class="dot"></div>
   ✅ NW 3kts OFFSHORE at all 3 spots — clean glassy surf. Stays light offshore through midday.
+</div>
+
+<!-- SHARK ALERT BAR -->
+<div class="shark-bar shark-info" id="sharkBar">
+  <div class="shark-ico">🦈</div>
+  <div>
+    <span id="sharkText">No active shark alert reported for Dee Why · Long Reef · Curl Curl. Drone &amp; Surf Life Saving shark patrols active through 30 Jun.</span>
+    <a class="shark-link" id="sharkLink" href="https://www.sharksmart.nsw.gov.au/" target="_blank">Live status ↗</a>
+  </div>
 </div>
 
 <!-- TABS -->
