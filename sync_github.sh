@@ -10,6 +10,10 @@ TOKEN_FILE="$FOLDER/.github_token"
 
 cd "$FOLDER" || exit 1
 
+# Regenerate the mobile view from index.html so it can never drift out of sync.
+# (index.html is the single source of truth; mobile.html is always derived.)
+python3 build_mobile.py >> "$LOG_FILE" 2>&1
+
 # Keep remote URL fresh with token
 if [ -f "$TOKEN_FILE" ]; then
   TOKEN=$(cat "$TOKEN_FILE")
