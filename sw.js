@@ -1,5 +1,8 @@
-const CACHE = 'surf-v2';
-const SHELL = ['./', './index.html', './mobile.html', './manifest.json', './icon.svg'];
+const CACHE = 'surf-v3';
+// Only pre-cache static assets. HTML pages are deliberately NOT pre-cached so a
+// stale snapshot can never be served — they're fetched network-first (see below)
+// and only the last-seen copy is kept for offline use.
+const SHELL = ['./manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
